@@ -75,13 +75,23 @@ class SentimentDataset(Dataset):
             "labels": self.labels[idx],
         }
 
-def prepare_dataloader(path_to_data: str, batch_size=16):
+def prepare_dataloader(path_to_data: str, batch_size=16, split_ratio=0.8):
     """
-    Complete pipeline: Load data, preprocess, and return a DataLoader.
+    Complete pipeline: Load data, preprocess, and return train and test DataLoaders.
     """
     df = load_data(path_to_data)
     df = create_sentiment_column(df)
     input_ids, attention_masks, labels = preprocess_reviews_processing(df)
+
     dataset = SentimentDataset(input_ids, attention_masks, labels)
-    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    
+    train_size = int(split_ratio * len(dataset))
+    test_size = len(dataset) - train_size
+    
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+    
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    
+    return train_loader, test_loader
 
